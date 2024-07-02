@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"name": "fault_detecting_solar_street_light",
+			"path": "../../.."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"stdint.h": "c",
+			"cmath": "cpp",
+			"espasyncwebserver.h": "c"
+		}
+	}
+}
