@@ -1,18 +1,26 @@
 #include <Arduino.h>
 #include <WiFiClient.h>
 #include "wifi-driver.h"
-#include "webServer.h"
+// #include "webServer.h"
 #include "lm75-driver.h"
 #include <Wire.h>
-#include <ArduinoJson.h>
+// #include <ArduinoJson.h>
 #include <ldr-driver.h>
 #include <led-driver.h>
 #include <voltage-driver.h>
-// #include <dust_sensor.h>
-#include <sim800.h>
+#include <dust_sensor.h>
+// #include <sim800.h>
 
-char* ssid = "Akintunde's iphone";
-char* wpassword = "akintunde11";
+
+#define BLYNK_TEMPLATE_ID "TMPL2JIEb2LsZ"
+#define BLYNK_TEMPLATE_NAME "Solar Street Light IoT Monitoring Device"
+#define BLYNK_AUTH_TOKEN "s4pwewhOYhUYa_RdyXQmhCTNedPOYWkB"
+#include <BlynkSimpleEsp32.h>
+
+char auth[] = BLYNK_AUTH_TOKEN;
+
+char* ssid = "";
+char* wpassword = "";
 
 
 lm75_config_t lm75Config = {
@@ -29,51 +37,90 @@ lm75_t *lm75;
 ldr_t* ldr_obj;
 led_t* led_obj;
 volt_t* volt_obj;
-// dust_t* dust_obj;
-sim800_t* sim800_obj;
+dust_t* dust_obj;
+// sim800_t* sim800_obj;
+BlynkTimer timer;
 // LM75 interrupt handler
 void lm75InterruptHandler()
 {
     // Handle LM75 interrupt here if needed
 }
 
-static String get_all_data_as_string(){
-    float temp;
-    float volt;
-    int ldr_val;
-    JsonDocument doc;
-    String final_data="";
-    Serial.println("inside callback");
-    error_type_t err = lm75_read(lm75,&temp); 
-    if(err == ERROR_OK){
-        Serial.println("LM75 returns error ok");
-        //final_data += (String)temp;
-        doc["temperature"] = (String)temp;
-    }
-     err =voltage_read(volt_obj, &volt);
-    if (err = ERROR_OK)
-    {
-      Serial.println("voltage return error ok");
-      //final_data += (String)volt;
-      doc["voltage"] = (String)volt;
-    }
+// static String get_all_data_as_string(){
+//     float temp;
+//     float volt;
+//     int ldr_val;
+//     JsonDocument doc;
+//     String final_data="";
+//     Serial.println("inside callback");
+//     error_type_t err = lm75_read(lm75,&temp); 
+//     if(err == ERROR_OK){
+//         Serial.println("LM75 returns error ok");
+//         //final_data += (String)temp;
+//         doc["temperature"] = (String)temp;
+//     }
+//      err =voltage_read(volt_obj, &volt);
+//     if (err = ERROR_OK)
+//     {
+//       Serial.println("voltage return error ok");
+//       //final_data += (String)volt;
+//       doc["voltage"] = (String)volt;
+//     }
     
-    err = ldr_read(ldr_obj,&ldr_val);
-    if(err == ERROR_OK){
-        Serial.println("ldr returns error ok");
-        //final_data += (String)temp;
-        doc["ldr"] = (String)ldr_val;
-    }
-    size_t error = serializeJson(doc, final_data);
-    if (!error){
-        Serial.printf("Json error");
-        return "";
-    }
-    return final_data;
+    // err = ldr_read(ldr_obj,&ldr_val);
+//     if(err == ERROR_OK){
+//         Serial.println("ldr returns error ok");
+//         //final_data += (String)temp;
+//         doc["ldr"] = (String)ldr_val;
+//     }
+//     size_t error = serializeJson(doc, final_data);
+//     if (!error){
+//         Serial.printf("Json error");
+//         return "";
+//     }
+//     return final_data;
+// }
+
+void sendData(){
+   float temp;
+   float volt;
+   float dust;
+   int ldr_val;
+
+   error_type_t err = ldr_read(ldr_obj, &ldr_val);
+   Blynk.virtualWrite(V1, err);
+   if (err = ERROR_OK)
+   {
+      Serial.println("ldr return error ok");
+   }
+
+   err = voltage_read(volt_obj, &volt);
+   Blynk.virtualWrite(V2, err);
+    if (err = ERROR_OK)
+   {
+      Serial.println("volt return error ok");
+   }
+
+   err = lm75_read(lm75, &temp);
+    Blynk.virtualWrite(V3, err);
+    if (err = ERROR_OK)
+   {
+      Serial.println("lm75 return error ok");
+   }
+
+   err = dust_read(dust_obj,&dust);
+    Blynk.virtualWrite(V4, err);
+    if (err = ERROR_OK)
+   {
+      Serial.println("dust return error ok");
+   }
+
+
 }
 
 void setup() {
    Serial.begin(9600);
+   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, wpassword);
    error_type_t err;
    wifi_configuration_t wifi_config = { .ssid = ssid, .password=wpassword};
    wifi_t* wifi_obj = wifi_create(&wifi_config);
@@ -86,22 +133,25 @@ void setup() {
         Serial.println("WiFi connect failed!");
         exit(1);  
   }
-  webserver_config_t web_config = {.port_number=80,.callback = get_all_data_as_string};
-  webserver_t* webserver = webserver_create(&web_config);
-  if(!webserver){
-    Serial.println("could not create webserver object");
-    exit(1);
-  }
-  err = webserver_init(webserver);
-  if(err != ERROR_OK){
-    Serial.println("could not init webserver object");
-    exit(1);
-  }
-  err = webserver_begin(webserver);
-  if(err != ERROR_OK){
-    Serial.println("could not begin webserver");
-    exit(1);
-  }
+
+  timer.setInterval(2000L, sendData);
+  //webserver
+  // webserver_config_t web_config = {.port_number=80,.callback = get_all_data_as_string};
+  // webserver_t* webserver = webserver_create(&web_config);
+  // if(!webserver){
+  //   Serial.println("could not create webserver object");
+  //   exit(1);
+  // }
+  // err = webserver_init(webserver);
+  // if(err != ERROR_OK){
+  //   Serial.println("could not init webserver object");
+  //   exit(1);
+  // }
+  // err = webserver_begin(webserver);
+  // if(err != ERROR_OK){
+  //   Serial.println("could not begin webserver");
+  //   exit(1);
+  // }
 
     //create ldr obj
     ldr_config_t ldr_driver= {.ldr_pin_number = 32};
@@ -161,33 +211,48 @@ void setup() {
         Serial.println("could not init voltage object");
         exit(1);
     }
+
+    //  create dust sensor object
+
+    dust_config_t dust_driver = {.vout_pin_number = 15, .led_pin_number = 13 };
+    dust_obj = dust_create(&dust_driver);
+    if (!volt_obj)
+    {
+      Serial.println("could not create dust object");
+      exit(1);
+
+    }
+    
     
 
     // Uncomment the following line if using interrupt mode
     lm75_init_interrupt_mode(lm75, lm75InterruptHandler);
-      sim800_config_t sim_config = {.serial_number = 2, .baud_rate = 9600};
-      sim800_obj = sim800_create(&sim_config);
-      err = sim800_init(sim800_obj);
-      if(err != ERROR_OK){
-        Serial.println("Failed to initialize SIM800.");
-        exit(1);
-      }
-      err = sim800_connect(sim800_obj);
-      if(err != ERROR_OK){
-        Serial.println("Failed to connect SIM800.");
-        exit(1);
-      }
-      String phone_number = "+2347068666080";
-      String message = "Hello world!";
-      err = sim800_send_sms(sim800_obj,phone_number.c_str(), message.c_str());
-      if(err != ERROR_OK){
-        Serial.println("Failed to send sms SIM800.");
-        exit(1);
-      }
+    //sim800 configuration
+      // sim800_config_t sim_config = {.serial_number = 2, .baud_rate = 9600};
+      // sim800_obj = sim800_create(&sim_config);
+      // err = sim800_init(sim800_obj);
+      // if(err != ERROR_OK){
+      //   Serial.println("Failed to initialize SIM800.");
+      //   exit(1);
+      // }
+      // err = sim800_connect(sim800_obj);
+      // if(err != ERROR_OK){
+      //   Serial.println("Failed to connect SIM800.");
+      //   exit(1);
+      // }
+      // String phone_number = "+2347068666080";
+      // String message = "Hello world!";
+      // err = sim800_send_sms(sim800_obj,phone_number.c_str(), message.c_str());
+      // if(err != ERROR_OK){
+      //   Serial.println("Failed to send sms SIM800.");
+      //   exit(1);
+      // }
 
 }
 
 void loop() {
+   Blynk.run();
+   timer.run();
   // put your main code here, to run repeatedly:
   // ldr_read(ldr_obj);
 //    float temperature = lm75_read(lm75);

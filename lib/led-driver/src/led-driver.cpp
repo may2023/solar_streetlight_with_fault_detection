@@ -2,8 +2,6 @@
 #include "led-driver.h"
 #include<stdbool.h>
 
-
-
 struct led_t
 {
     uint8_t led_pin_number;
