@@ -39,7 +39,7 @@ error_type_t wifi_connect(wifi_t* wifi_obj){
     int counter = 0;
     while(WiFi.status() != WL_CONNECTED && counter++ < WIFI_CONNECT_DELAY){
         Serial.println("attempting connection");
-        delay(1);
+        delay(500);
     }
     return counter >= WIFI_CONNECT_DELAY ? ERROR_FAILED : ERROR_OK;
 }

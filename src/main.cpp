@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <WiFiClient.h>
 #include "wifi-driver.h"
-// #include "webServer.h"
+#include "webServer.h"
 #include "lm75-driver.h"
 #include <Wire.h>
-// #include <ArduinoJson.h>
+#include <ArduinoJson.h>
 #include <ldr-driver.h>
 #include <led-driver.h>
 #include <voltage-driver.h>
@@ -19,8 +19,8 @@
 
 char auth[] = BLYNK_AUTH_TOKEN;
 
-char* ssid = "";
-char* wpassword = "";
+char* ssid = "YOUNGCRYPT";
+char* wpassword = "badewa12345";
 
 
 lm75_config_t lm75Config = {
@@ -46,47 +46,47 @@ void lm75InterruptHandler()
     // Handle LM75 interrupt here if needed
 }
 
-// static String get_all_data_as_string(){
-//     float temp;
-//     float volt;
-//     int ldr_val;
-//     JsonDocument doc;
-//     String final_data="";
-//     Serial.println("inside callback");
-//     error_type_t err = lm75_read(lm75,&temp); 
-//     if(err == ERROR_OK){
-//         Serial.println("LM75 returns error ok");
-//         //final_data += (String)temp;
-//         doc["temperature"] = (String)temp;
-//     }
-//      err =voltage_read(volt_obj, &volt);
-//     if (err = ERROR_OK)
-//     {
-//       Serial.println("voltage return error ok");
-//       //final_data += (String)volt;
-//       doc["voltage"] = (String)volt;
-//     }
+static String get_all_data_as_string(){
+    float temp;
+    float volt;
+    int ldr_val;
+    JsonDocument doc;
+    String final_data="";
+    Serial.println("inside callback");
+    error_type_t err = lm75_read(lm75,&temp); 
+    if(err == ERROR_OK){
+        Serial.println("LM75 returns error ok");
+        //final_data += (String)temp;
+        doc["temperature"] = (String)temp;
+    }
+     err =voltage_read(volt_obj, &volt);
+    if (err = ERROR_OK)
+    {
+      Serial.println("voltage return error ok");
+      //final_data += (String)volt;
+      doc["voltage"] = (String)volt;
+    }
     
-    // err = ldr_read(ldr_obj,&ldr_val);
-//     if(err == ERROR_OK){
-//         Serial.println("ldr returns error ok");
-//         //final_data += (String)temp;
-//         doc["ldr"] = (String)ldr_val;
-//     }
-//     size_t error = serializeJson(doc, final_data);
-//     if (!error){
-//         Serial.printf("Json error");
-//         return "";
-//     }
-//     return final_data;
-// }
-
-void sendData(){
+    err = ldr_read(ldr_obj,&ldr_val);
+    if(err == ERROR_OK){
+        Serial.println("ldr returns error ok");
+        //final_data += (String)temp;
+        doc["ldr"] = (String)ldr_val;
+    }
+    size_t error = serializeJson(doc, final_data);
+    if (!error){
+        Serial.printf("Json error");
+        return "";
+    }
+    return final_data;
+}
    float temp;
    float volt;
    float dust;
    int ldr_val;
 
+void sendData(){
+  
    error_type_t err = ldr_read(ldr_obj, &ldr_val);
    Blynk.virtualWrite(V1, err);
    if (err = ERROR_OK)
@@ -120,7 +120,7 @@ void sendData(){
 
 void setup() {
    Serial.begin(9600);
-   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, wpassword);
+  
    error_type_t err;
    wifi_configuration_t wifi_config = { .ssid = ssid, .password=wpassword};
    wifi_t* wifi_obj = wifi_create(&wifi_config);
@@ -130,29 +130,30 @@ void setup() {
         exit(1);
   }
   if(wifi_connect(wifi_obj) != ERROR_OK){
-        Serial.println("WiFi connect failed!");
+        Serial.println("WiFi connection failed!");
         exit(1);  
   }
-
+   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, wpassword);
   timer.setInterval(2000L, sendData);
-  //webserver
-  // webserver_config_t web_config = {.port_number=80,.callback = get_all_data_as_string};
-  // webserver_t* webserver = webserver_create(&web_config);
-  // if(!webserver){
-  //   Serial.println("could not create webserver object");
-  //   exit(1);
-  // }
-  // err = webserver_init(webserver);
-  // if(err != ERROR_OK){
-  //   Serial.println("could not init webserver object");
-  //   exit(1);
-  // }
-  // err = webserver_begin(webserver);
-  // if(err != ERROR_OK){
-  //   Serial.println("could not begin webserver");
-  //   exit(1);
-  // }
 
+  webserver_config_t web_config = {.port_number=80,.callback = get_all_data_as_string};
+  webserver_t* webserver = webserver_create(&web_config);
+  if(!webserver){
+    Serial.println("could not create webserver object");
+    exit(1);
+  }
+  err = webserver_init(webserver);
+  if(err != ERROR_OK){
+    Serial.println("could not init webserver object");
+    exit(1);
+  }
+  err = webserver_begin(webserver);
+  if(err != ERROR_OK){
+    Serial.println("could not begin webserver");
+    exit(1);
+  }
+
+ 
     //create ldr obj
     ldr_config_t ldr_driver= {.ldr_pin_number = 32};
 
@@ -254,13 +255,21 @@ void loop() {
    Blynk.run();
    timer.run();
   // put your main code here, to run repeatedly:
-  // ldr_read(ldr_obj);
-//    float temperature = lm75_read(lm75);
-//     Serial.print("Temperature: ");
-//     Serial.print(temperature);
-//     Serial.println(" °C");
+  ldr_read(ldr_obj, &ldr_val);
+   float temperature = lm75_read(lm75, &temp);
+   
+    // Serial.print("Temperature: ");
+    // Serial.print(temperature);
+    // Serial.println(" °C");
 
-//     delay(1000);
+    // delay(1000);
+
+    //  long rssi = WiFi.RSSI();
+    // Serial.print("Signal strength (RSSI): ");
+    // Serial.print(rssi);
+    // Serial.println(" dBm");
+
+    // delay(5000);
 // error_type_t err;
 // err = led_set(led_obj,LED_ON);
 // if(err != ERROR_OK){
