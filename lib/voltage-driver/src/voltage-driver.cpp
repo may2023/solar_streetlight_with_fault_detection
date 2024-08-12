@@ -2,7 +2,7 @@
 #include "voltage-driver.h"
 #include <stdbool.h>
 
-#define VOLTAGE_PIN_NUMBER 4
+#define VOLTAGE_PIN_NUMBER 34
 static double f13_semPow(double x);
 static double poly_convert(int reading);
 struct volt_t

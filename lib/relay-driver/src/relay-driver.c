@@ -2,6 +2,8 @@
 #include  "relay-driver.h"
 #include<stdbool.h>
 
+#define RELAY_PIN_NUMBER 32
+
 struct relay_t
 {
     uint8_t relay_pin_number;

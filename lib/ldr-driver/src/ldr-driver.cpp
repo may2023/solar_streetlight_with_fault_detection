@@ -2,7 +2,7 @@
 #include "ldr-driver.h"
 #include<stdbool.h>
 
-#define LDR_PIN_NUMBER 27
+#define LDR_PIN_NUMBER 33
 
 struct ldr_t
 {

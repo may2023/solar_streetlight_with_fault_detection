@@ -2,8 +2,8 @@
 #include "dust_sensor.h"
 #include <stdbool.h>
 
-#define VOUT_PIN_NUMBER 15
-#define LED_PIN_NUMBER  13
+#define VOUT_PIN_NUMBER 36
+#define LED_PIN_NUMBER  35
 
 
 struct dust_t
